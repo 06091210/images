@@ -3,76 +3,54 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ランダムフォルダ画像表示</title>
+<title>ランダムフォルダ画像表示（フルスクリーン）</title>
 <style>
-  body{
-    font-family: system-ui, "Hiragino Kaku Gothic ProN", "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+  body {
     margin: 0;
-    min-height: 100vh;
+    background: #000; /* 全画面時の背景を黒に */
+    font-family: sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    background: #f6f8fa;
-    color: #111;
-    padding: 20px;
+    min-height: 100vh;
+    color: white;
   }
-  .card{
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-    padding: 16px;
-  }
-  button{
-    appearance: none;
-    border: none;
+  button {
     background: #2563eb;
     color: white;
-    padding: 10px 16px;
+    border: none;
+    padding: 12px 20px;
+    font-size: 18px;
     border-radius: 8px;
-    font-size: 16px;
     cursor: pointer;
   }
-  button:active{ transform: translateY(1px); }
-  img{
-    width: 100%;
-    height: auto;
-    max-height: 60vh;
-    object-fit: contain;
-    border-radius: 8px;
-    margin-top: 12px;
-    background: #eee;
-    touch-action: manipulation; /* タップの反応改善 */
+  button:active {
+    transform: translateY(1px);
   }
-  .meta { font-size: 14px; color: #444; margin-top: 8px; word-break: break-all; }
-  .hint { font-size: 13px; color: #777; margin-top: 6px; }
-  .error { color: #b91c1c; margin-top: 8px; }
+  #mainImg {
+    max-width: 100%;
+    max-height: 100%;
+    cursor: pointer;
+    background: #000;
+    display: none; /* 初期は非表示 */
+  }
+  #meta {
+    font-size: 14px;
+    color: #ccc;
+  }
 </style>
 </head>
 <body>
-  <div class="card">
-    <h2>ランダムフォルダ画像表示</h2>
-    <div>
-      <button id="pickBtn">ランダムにフォルダを選ぶ</button>
-    </div>
 
-    <div id="viewer">
-      <!-- ここに画像が入る -->
-      <img id="mainImg" alt="画像がここに表示されます" style="display:none" />
-      <div id="meta" class="meta"></div>
-      <div id="hint" class="hint">ボタンを押すとランダムにフォルダが選ばれて、1.png が表示されます。画像をタップすると 2.png に切り替わります。</div>
-      <div id="errorMsg" class="error" role="alert"></div>
-    </div>
-  </div>
+<button id="pickBtn">ランダムにフォルダを選ぶ</button>
+<img id="mainImg" alt="画像がここに表示されます" />
+<div id="meta"></div>
 
 <script>
 (() => {
-  // ======== ここを自分のフォルダ名リストに変更 ========
-  // 例: フォルダ構成が ./images/a/1.png, ./images/a/2.png のようなら 'images/a'
+  // ======== フォルダ名をここに書き換えてください ========
   const folders = [
     'AI',
     'NBA',
@@ -87,91 +65,67 @@
     '金属',
     '首相'
   ];
-  // ==================================================
+  // ==============================================
 
   const pickBtn = document.getElementById('pickBtn');
   const mainImg = document.getElementById('mainImg');
   const meta = document.getElementById('meta');
-  const errorMsg = document.getElementById('errorMsg');
 
   let currentFolder = null;
-  let showing = null; // "1" または "2"
-  let tapLocked = false; // 連続タップ防止
+  let showing = null; // "1" or "2"
 
+  // ランダムにフォルダを選ぶ
   function chooseRandomFolder() {
-    if (!folders || folders.length === 0) {
-      showError('フォルダリストが空です。folders 配列を編集してください。');
-      return null;
-    }
     const idx = Math.floor(Math.random() * folders.length);
     return folders[idx];
   }
 
-  function showError(text) {
-    errorMsg.textContent = text;
-  }
-  function clearError() {
-    errorMsg.textContent = '';
-  }
-
-  function setImageFor(fileName) {
-    clearError();
-    // 表示前に非表示にしてから読み込み（表示崩れ対策）
-    mainImg.style.display = 'none';
-    mainImg.src = fileName;
+  // 画像を表示
+  function showImage(filePath, label) {
+    mainImg.style.display = 'none'; // 読み込み前に非表示
+    mainImg.src = filePath;
+    showing = label;
   }
 
-  // 画像読み込み成功時
+  // 画像の読み込み完了
   mainImg.addEventListener('load', () => {
     mainImg.style.display = 'block';
-    meta.textContent = currentFolder + ' / ' + (showing === '1' ? '1.png' : '2.png');
-    tapLocked = false;
+    meta.textContent = `${currentFolder} / ${showing}.png`;
   });
 
-  // 読み込み失敗時
-  mainImg.addEventListener('error', () => {
-    mainImg.style.display = 'none';
-    showError('画像の読み込みに失敗しました。パスを確認してください: ' + currentFolder + '/' + (showing === '1' ? '1.png' : '2.png'));
-    tapLocked = false;
-  });
-
-  // ボタンクリック → ランダム選択して 1.png を表示
+  // ボタンを押したとき → ランダムフォルダの1.pngを表示
   pickBtn.addEventListener('click', () => {
-    // 選択と表示処理
     currentFolder = chooseRandomFolder();
-    if (!currentFolder) return;
-    showing = '1';
-    tapLocked = true; // 読み込み中にタップされないように
-    setImageFor(currentFolder + '/1.png');
+    showImage(`${currentFolder}/1.png`, '1');
   });
 
-  // 画像タップで 2.png に切り替え（1 -> 2 の一方向）
-  // モバイルとデスクトップの両方に対応（touchstart と click）
-  function onImageTap(ev) {
-    ev.preventDefault();
-    if (tapLocked) return;
+  // 画像をクリック／タップしたとき
+  mainImg.addEventListener('click', async () => {
     if (!currentFolder) return;
-    if (showing === '1') {
-      showing = '2';
-      tapLocked = true;
-      setImageFor(currentFolder + '/2.png');
+
+    // まずフルスクリーンに切り替える
+    if (!document.fullscreenElement) {
+      try {
+        await mainImg.requestFullscreen();  // 画像をフルスクリーン表示
+      } catch (err) {
+        console.error('フルスクリーンにできません:', err);
+      }
     } else {
-      // 既に2.pngが表示されている場合の挙動（今回は何もしない）
-      // もし別の挙動が良ければここを書き換えてください（例: 別フォルダに移る）
+      // すでにフルスクリーンなら次の画像へ
+      if (showing === '1') {
+        showImage(`${currentFolder}/2.png`, '2');
+      }
     }
-  }
-
-  mainImg.addEventListener('click', onImageTap);
-  mainImg.addEventListener('touchstart', onImageTap, {passive: false});
-
-  // キーボード操作でテストできるように Enter でランダム選択
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') pickBtn.click();
   });
 
-  // 初期説明（任意）
-  meta.textContent = 'まだフォルダが選ばれていません。';
+  // フルスクリーン解除時のイベント（例: Escキーで閉じたら戻る）
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      console.log('フルスクリーンを終了');
+    }
+  });
 })();
 </script>
+
 </body>
 </html>
