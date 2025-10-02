@@ -74,7 +74,7 @@
   const foldersByLevel = {
     easy:    [],
     normal:  ['フォルダD','フォルダE'],
-    hard:    ['AI','NBA','コンビニ','ノーベル賞','ハリウッド','元素','古文','四字熟語','山手線','百人一首','金属','首相']
+    hard:    ['AI','NBA','コンビニ','ノーベル賞','ハリウッドスター','元素','古文','四字熟語','百人一首','金属','首相']
   };
   // ルートフォルダ名（例: 簡単 → ./簡単/フォルダA/1.png という構成）
   const levelRoots = {
@@ -117,14 +117,14 @@
   // 画像が読み込まれたら表示
   mainImg.addEventListener('load', () => {
     mainImg.style.display = 'block';
-    meta.textContent = `${levelRoots[currentLevel]} / ${currentFolder} / ${showing}.png`;
+    meta.textContent = `${levelRoots[currentLevel]} / ${currentFolder} / ${showing}.jpeg`;
   });
 
   // ボタンクリック → 1.pngを表示
   pickBtn.addEventListener('click', () => {
     currentFolder = chooseRandomFolder(currentLevel);
     const root = levelRoots[currentLevel];
-    showImage(`${root}/${currentFolder}/1.png`, '1');
+    showImage(`${root}/${currentFolder}/1.jpeg`, '1');
   });
 
   // 画像クリック → 2.pngに切り替え
@@ -132,7 +132,7 @@
     if (!currentFolder) return;
     if (showing === '1') {
       const root = levelRoots[currentLevel];
-      showImage(`${root}/${currentFolder}/2.png`, '2');
+      showImage(`${root}/${currentFolder}/2.jpeg`, '2');
     }
   });
 })();
