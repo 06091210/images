@@ -8,31 +8,36 @@
   html, body {
     margin: 0;
     height: 100%;
-    background: #000;          /* 背景は黒 */
+    background: #000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
   }
-  #pickBtn {
+  #controls {
     position: absolute;
     top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    z-index: 10;
+  }
+  select, button {
+    padding: 8px 16px;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+  #pickBtn {
     background: #2563eb;
     color: #fff;
     border: none;
-    padding: 12px 20px;
-    font-size: 18px;
-    border-radius: 8px;
     cursor: pointer;
-    z-index: 10;
   }
   #mainImg {
     max-width: 100vw;
     max-height: 100vh;
-    object-fit: contain;       /* 画像を画面内に収める */
-    display: none;             /* 最初は非表示 */
+    object-fit: contain;
+    display: none;
     cursor: pointer;
   }
   #meta {
@@ -47,66 +52,87 @@
 </head>
 <body>
 
-<button id="pickBtn">ランダムにフォルダを選ぶ</button>
+<div id="controls">
+  <label>
+    難易度：
+    <select id="levelSelect">
+      <option value="easy">簡単</option>
+      <option value="normal">難しい</option>
+      <option value="hard">鬼むず</option>
+    </select>
+  </label>
+  <button id="pickBtn">問題</button>
+</div>
+
 <img id="mainImg" alt="画像がここに表示されます">
 <div id="meta"></div>
 
 <script>
 (() => {
-  // ======== フォルダ名をここに書き換えてください ========
-  const folders = [
-    'AI',
-    'NBA',
-    'コンビニ',
-    'ノーベル賞',
-    'ハリウッド',
-    '元素',
-    '古文',
-    '四字熟語',
-    '山手線',
-    '百人一首',
-    '金属',
-    '首相'
-  ];
-  // ==============================================
+  // ====== 難易度ごとのフォルダ配下 ======
+  // 各配列にはサブフォルダ名だけを列挙（例: 簡単/国語, 簡単/理科 の場合は "国語","理科"）
+  const foldersByLevel = {
+    easy:    ['AI','NBA','コンビニ','ノーベル賞','ハリウッド','元素','古文','四字熟語','山手線','百人一首','金属','首相'],
+    normal:  ['フォルダD','フォルダE'],
+    hard:    ['フォルダF','フォルダG','フォルダH']
+  };
+  // ルートフォルダ名（例: 簡単 → ./簡単/フォルダA/1.png という構成）
+  const levelRoots = {
+    easy:   '簡単',
+    normal: '難しい',
+    hard:   '鬼むず'
+  };
 
-  const pickBtn = document.getElementById('pickBtn');
-  const mainImg = document.getElementById('mainImg');
-  const meta = document.getElementById('meta');
+  const levelSelect = document.getElementById('levelSelect');
+  const pickBtn     = document.getElementById('pickBtn');
+  const mainImg     = document.getElementById('mainImg');
+  const meta        = document.getElementById('meta');
 
+  let currentLevel  = 'easy';
   let currentFolder = null;
-  let showing = null; // "1" or "2"
+  let showing       = null; // "1" or "2"
 
-  // ランダムにフォルダを選ぶ
-  function chooseRandomFolder() {
-    const idx = Math.floor(Math.random() * folders.length);
-    return folders[idx];
+  // 難易度の選択
+  levelSelect.addEventListener('change', () => {
+    currentLevel = levelSelect.value;
+    currentFolder = null;
+    mainImg.style.display = 'none';
+    meta.textContent = '';
+  });
+
+  // ランダムにサブフォルダを選ぶ
+  function chooseRandomFolder(level) {
+    const arr = foldersByLevel[level];
+    const idx = Math.floor(Math.random() * arr.length);
+    return arr[idx];
   }
 
   // 画像を表示
-  function showImage(filePath, label) {
-    mainImg.style.display = 'none'; // 読み込み前に非表示
-    mainImg.src = filePath;
+  function showImage(path, label) {
+    mainImg.style.display = 'none';
+    mainImg.src = path;
     showing = label;
   }
 
-  // 画像読み込み成功
+  // 画像が読み込まれたら表示
   mainImg.addEventListener('load', () => {
     mainImg.style.display = 'block';
-    meta.textContent = `${currentFolder} / ${showing}.png`;
+    meta.textContent = `${levelRoots[currentLevel]} / ${currentFolder} / ${showing}.png`;
   });
 
-  // ボタンクリック → ランダムフォルダの1.pngを表示
+  // ボタンクリック → 1.pngを表示
   pickBtn.addEventListener('click', () => {
-    currentFolder = chooseRandomFolder();
-    showImage(`${currentFolder}/1.png`, '1');
+    currentFolder = chooseRandomFolder(currentLevel);
+    const root = levelRoots[currentLevel];
+    showImage(`${root}/${currentFolder}/1.png`, '1');
   });
 
-  // 画像をクリック／タップ → 2.pngを表示
+  // 画像クリック → 2.pngに切り替え
   mainImg.addEventListener('click', () => {
     if (!currentFolder) return;
     if (showing === '1') {
-      showImage(`${currentFolder}/2.png`, '2');
+      const root = levelRoots[currentLevel];
+      showImage(`${root}/${currentFolder}/2.png`, '2');
     }
   });
 })();
