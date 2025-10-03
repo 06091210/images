@@ -194,12 +194,12 @@
   /* タイマー表示 */
   #timer {
     position: absolute;
-    top: 20%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 64px;
     font-weight: bold;
-    color: #000;
+    color: #fff;
     display: none;
     z-index: 20;
   }
@@ -246,70 +246,81 @@
   let currentLevel  = 'easy';
   let currentFolder = null;
   let showing       = null;
-  let countdownId   = null;
 
+  // タイマー用
+  let countdownId   = null;
+  let timeLeft      = 0;
+  let paused        = false; // 一時停止フラグ
+  let timerStarted  = false; // 1度だけ開始させるためのフラグ
+
+  // 難易度変更時
   levelSelect.addEventListener('change', () => {
     currentLevel = levelSelect.value;
     currentFolder = null;
     mainImg.style.display = 'none';
     meta.textContent = '';
-    timerEl.style.display = 'none';
+    timerEl.style.display = timerStarted ? 'block' : 'none';
   });
 
+  // フォルダ選択
   function chooseRandomFolder(level) {
     const arr = foldersByLevel[level];
-    const idx = Math.floor(Math.random() * arr.length);
-    return arr[idx];
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 
+  // 画像表示
   function showImage(path, label) {
     mainImg.style.display = 'none';
     mainImg.src = path;
     showing = label;
   }
 
+  // 画像読み込み完了時
   mainImg.addEventListener('load', () => {
     mainImg.style.display = 'block';
     meta.textContent = `${levelRoots[currentLevel]} / ${currentFolder} / ${showing}.jpeg`;
   });
 
-  // カウントダウン開始
-  function startCountdown(seconds) {
-    let timeLeft = seconds;
+  // タイマー開始（リロードするまで続く）
+  function startGlobalTimer(initialTime) {
+    timeLeft = initialTime;
     timerEl.style.display = 'block';
     timerEl.textContent = timeLeft;
 
     countdownId = setInterval(() => {
-      timeLeft--;
-      timerEl.textContent = timeLeft;
-      if (timeLeft <= 0) {
-        clearInterval(countdownId);
-        timerEl.textContent = '終了';
+      if (!paused && timeLeft > 0) {
+        timeLeft--;
+        timerEl.textContent = timeLeft > 0 ? timeLeft : '終了';
       }
     }, 1000);
   }
 
+  // 問題ボタン
   pickBtn.addEventListener('click', () => {
-    // まず問題を表示
     currentFolder = chooseRandomFolder(currentLevel);
     const root = levelRoots[currentLevel];
     showImage(`${root}/${currentFolder}/1.jpeg`, '1');
 
-    // 既存タイマーをリセット
-    clearInterval(countdownId);
-    timerEl.style.display = 'none';
-
-    // 4秒後にカウントダウン開始（50秒）
-    setTimeout(() => {
-      startCountdown(50);
-    }, 4000);
+    // 初回だけ、4秒後にタイマー開始
+    if (!timerStarted) {
+      timerStarted = true;
+      setTimeout(() => {
+        startGlobalTimer(50);
+      }, 4000);
+    }
   });
 
+  // 画像クリック（1→2 に切り替え）
   mainImg.addEventListener('click', () => {
     if (!currentFolder) return;
+    const root = levelRoots[currentLevel];
+
     if (showing === '1') {
-      const root = levelRoots[currentLevel];
       showImage(`${root}/${currentFolder}/2.jpeg`, '2');
+      paused = true; // 2のとき一時停止
+    } else if (showing === '2') {
+      showImage(`${root}/${currentFolder}/1.jpeg`, '1');
+      paused = false; // 1に戻ったら再開
     }
   });
 })();
@@ -317,4 +328,3 @@
 
 </body>
 </html>
-
